@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="de" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokémon Sammlung - Cardmarket Manager</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        cm: {
+                            blue: '#0055a5',
+                            darkblue: '#003e7a',
+                            light: '#0070db'
+                        },
+                        poke: {
+                            red: '#EE1515',
+                            yellow: '#FFDE00',
+                            gold: '#B3A125'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .card-holo {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        
+        .card-holo:hover {
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: 0 12px 25px -5px rgba(0, 85, 165, 0.3), 0 8px 10px -6px rgba(255, 222, 0, 0.2);
+        }
+
+        .card-holo::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                115deg,
+                transparent 20%,
+                rgba(255, 255, 255, 0.12) 40%,
+                rgba(0, 112, 219, 0.15) 48%,
+                rgba(255, 222, 0, 0.15) 52%,
+                transparent 80%
+            );
+            transform: rotate(-30deg);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+        }
+
+        .card-holo:hover::before {
+            opacity: 1;
+        }
+
+        /* Quality Badges */
+        .badge-mt { background-color: #047857; color: #ecfdf5; }
+        .badge-nm { background-color: #10b981; color: #ecfdf5; }
+        .badge-ex { background-color: #2563eb; color: #eff6ff; }
+        .badge-gd { background-color: #d97706; color: #fffbeb; }
+        .badge-lp { background-color: #b45309; color: #fffbeb; }
+        .badge-pl { background-color: #dc2626; color: #fef2f2; }
+        .badge-po { background-color: #881337; color: #fef2f2; }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #090d16; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+    </style>
+</head>
+<body class="min-h-full flex flex-col font-sans bg-slate-950 text-slate-100">
+
+    <header class="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 shadow-xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                
+                <!-- Logo -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cm-blue to-blue-500 flex items-center justify-center border border-blue-400/30 shadow-md">
+                        <i class="fa-solid fa-store text-poke-yellow text-lg"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="font-display font-extrabold text-2xl tracking-wide bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
+                                Pokémon Sammlung
+                            </h1>
+                            <span class="bg-cm-blue text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                Cardmarket Sync
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-400">Cardmarket Marktpreise & Qualitätsverwaltung</p>
+                    </div>
+                </div>
+
+                <!-- Collection Stats & Controls -->
+                <div class="flex items-center justify-between md:justify-end gap-3">
+                    
+                    <!-- Total Value Cardmarket -->
+                    <div class="bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-2 flex items-center shadow-inner">
+                        <div class="mr-3 p-2 bg-emerald-500/10 text-emerald-400 rounded-lg">
+                            <i class="fa-solid fa-euro-sign text-lg"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] uppercase font-semibold tracking-wider text-slate-400 block">Gesamtwert (CM)</span>
+                            <span id="total-value" class="font-display text-lg font-bold text-emerald-400">0,00 €</span>
+                        </div>
+                    </div>
+
+                    <!-- Card Counter -->
+                    <div class="bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-2 flex items-center shadow-inner">
+                        <div class="mr-3 p-2 bg-cm-blue/20 text-cm-light rounded-lg">
+                            <i class="fa-solid fa-layer-group text-lg"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] uppercase font-semibold tracking-wider text-slate-400 block">Karten</span>
+                            <span id="total-count" class="font-display text-lg font-bold text-cm-light">0 Stk.</span>
+                        </div>
+                    </div>
+
+                    <!-- Import/Export & Add Buttons -->
+                    <div class="flex items-center gap-2">
+                        <button onclick="exportData()" title="Sammlung Exportieren (JSON)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 p-2.5 rounded-xl border border-slate-700 text-sm transition-all">
+                            <i class="fa-solid fa-download"></i>
+                        </button>
+                        <button onclick="document.getElementById('import-file-input').click()" title="Sammlung Importieren" class="bg-slate-800 hover:bg-slate-700 text-slate-200 p-2.5 rounded-xl border border-slate-700 text-sm transition-all">
+                            <i class="fa-solid fa-upload"></i>
+                        </button>
+                        <input type="file" id="import-file-input" accept=".json" onchange="importData(event)" class="hidden">
+
+                        <button onclick="openAddModal()" class="bg-gradient-to-r from-cm-blue to-blue-600 hover:from-cm-darkblue hover:to-blue-700 text-white font-semibold py-2.5 px-4 rounded-xl shadow-lg shadow-blue-900/30 transition-all flex items-center gap-2 text-sm">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <span>Cardmarket Suche</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                
+                <!-- Search Filter -->
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                    <input type="text" id="filter-search" oninput="applyFilters()" placeholder="In deiner Sammlung suchen..." 
+                           class="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none focus:border-cm-light text-slate-200 placeholder-slate-500">
+                </div>
+
+                <!-- Quality Filter -->
+                <div>
+                    <select id="filter-quality" onchange="applyFilters()" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none focus:border-cm-light text-slate-200">
+                        <option value="">Alle Qualitäten / Zustände</option>
+                        <option value="Mint">Mint (M)</option>
+                        <option value="Near Mint">Near Mint (NM)</option>
+                        <option value="Excellent">Excellent (EX)</option>
+                        <option value="Good">Good (GD)</option>
+                        <option value="Lightly Played">Lightly Played (LP)</option>
+                        <option value="Played">Played (PL)</option>
+                        <option value="Poor">Poor (PO)</option>
+                    </select>
+                </div>
+
+                <!-- Rarity Filter -->
+                <div>
+                    <select id="filter-rarity" onchange="applyFilters()" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none focus:border-cm-light text-slate-200">
+                        <option value="">Alle Seltenheiten</option>
+                    </select>
+                </div>
+
+                <!-- Sorting -->
+                <div>
+                    <select id="sort-by" onchange="applyFilters()" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none focus:border-cm-light text-slate-200">
+                        <option value="date-desc">Zuletzt hinzugefügt</option>
+                        <option value="price-desc">Cardmarket Preis: Hoch → Niedrig</option>
+                        <option value="price-asc">Cardmarket Preis: Niedrig → Hoch</option>
+                        <option value="name-asc">Name (A-Z)</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <!-- Empty State -->
+            <div id="empty-state" class="hidden text-center py-20 bg-slate-900/40 border border-dashed border-slate-800 rounded-2xl">
+                <div class="w-16 h-16 mx-auto mb-4 text-slate-600 flex items-center justify-center rounded-2xl bg-slate-800/50">
+                    <i class="fa-solid fa-store text-2xl"></i>
+                </div>
+                <h3 class="text-base font-semibold text-slate-300">Deine Cardmarket-Sammlung ist leer</h3>
+                <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1">
+                    Nutze die Suche oben rechts, um Pokémon-Karten mit echten Cardmarket-Preisen hinzuzufügen.
+                </p>
+                <button onclick="openAddModal()" class="mt-4 bg-cm-blue hover:bg-cm-light text-white font-medium py-2 px-4 rounded-xl text-xs transition-all inline-flex items-center gap-2">
+                    <i class="fa-solid fa-plus"></i> Karte über Cardmarket suchen
+                </button>
+            </div>
+
+            <!-- Collection Grid -->
+            <div id="collection-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+                <!-- Dynamically populated -->
+            </div>
+        </section>
+    </main>
+
+    <div id="add-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            
+            <!-- Modal Header -->
+            <div class="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-cm-blue/20 text-cm-light flex items-center justify-center font-bold text-sm">
+                        <i class="fa-solid fa-cart-shopping"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-display text-lg font-bold">Cardmarket Kartensuche</h2>
+                        <p class="text-[11px] text-slate-400">Durchsuche aktuelle Pokémon-Karten & Cardmarket Preistrends</p>
+                    </div>
+                </div>
+                <button onclick="closeAddModal()" class="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Search Form Bar -->
+            <div class="p-4 border-b border-slate-800 bg-slate-950">
+                <form onsubmit="handleCardmarketSearch(event)" class="flex gap-2">
+                    <div class="relative flex-grow">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
+                        <input type="text" id="api-search-input" placeholder="Pokémon Name oder Kartennummer (z.B. Glurak, Charizard ex, Pikachu 151)..." required
+                               class="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cm-light">
+                    </div>
+                    <button type="submit" id="api-search-btn" class="bg-cm-blue hover:bg-cm-light text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-all flex items-center gap-2 shrink-0 shadow-md">
+                        <i class="fa-solid fa-magnifying-glass"></i> Suchen
+                    </button>
+                </form>
+            </div>
+
+            <!-- Search Results Display -->
+            <div id="search-results-container" class="p-4 sm:p-6 overflow-y-auto flex-grow space-y-4 max-h-[60vh]">
+                <div id="search-placeholder" class="text-center py-16 text-slate-500">
+                    <i class="fa-solid fa-box-archive text-4xl mb-3 block text-slate-700"></i>
+                    <p class="text-xs">Gib einen Kartennamen ein, um direkt auf Cardmarket Preistrends (Trend, Avg 30, Low) zuzugreifen.</p>
+                </div>
+                
+                <div id="search-spinner" class="hidden text-center py-16">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-slate-700 border-t-cm-light"></div>
+                    <p class="text-slate-400 text-xs mt-3">Lade Cardmarket Marktdaten...</p>
+                </div>
+
+                <!-- API Cards Grid -->
+                <div id="api-results-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <!-- Dynamic Search Results -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+            <button onclick="closeEditModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            
+            <h3 class="font-display text-lg font-bold mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-sliders text-cm-light"></i> Karte in Sammlung anpassen
+            </h3>
+
+            <div id="edit-card-preview" class="flex gap-4 items-center mb-5 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                <!-- Preview image & card summary -->
+            </div>
+
+            <form id="edit-card-form" onsubmit="saveCardEdit(event)" class="space-y-4">
+                <input type="hidden" id="edit-card-id">
+
+                <div>
+                    <label class="block text-xs uppercase font-semibold text-slate-400 mb-1.5">Qualität / Zustand (Links unten)</label>
+                    <select id="edit-card-quality" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-cm-light">
+                        <option value="Mint">Mint (M) - Perfekt</option>
+                        <option value="Near Mint" selected>Near Mint (NM) - Fast Makellos</option>
+                        <option value="Excellent">Excellent (EX) - Minimal Abgenutzt</option>
+                        <option value="Good">Good (GD) - Leicht Gespielt</option>
+                        <option value="Lightly Played">Lightly Played (LP) - Sichtbare Spuren</option>
+                        <option value="Played">Played (PL) - Stark Bespielt</option>
+                        <option value="Poor">Poor (PO) - Beschädigt</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs uppercase font-semibold text-slate-400 mb-1.5">Cardmarket Preis Override (€) (Rechts unten)</label>
+                    <input type="number" id="edit-card-price" step="0.01" min="0" placeholder="Cardmarket Trendpreis überschreiben..." 
+                           class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-cm-light">
+                    <p class="text-[10px] text-slate-500 mt-1">Lass dieses Feld leer, um den automatischen Cardmarket-Trendpreis beizubehalten.</p>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-medium transition-colors">
+                        Abbrechen
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold transition-colors">
+                        Speichern
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const LOCAL_STORAGE_KEY = 'pokemon_sammlung_cm_cards_v2';
+        let collection = [];
+
+        // Quality mappings (Shortcodes & Badge styling)
+        const QUALITY_CONFIG = {
+            'Mint': { short: 'M', class: 'badge-mt' },
+            'Near Mint': { short: 'NM', class: 'badge-nm' },
+            'Excellent': { short: 'EX', class: 'badge-ex' },
+            'Good': { short: 'GD', class: 'badge-gd' },
+            'Lightly Played': { short: 'LP', class: 'badge-lp' },
+            'Played': { short: 'PL', class: 'badge-pl' },
+            'Poor': { short: 'PO', class: 'badge-po' }
+        };
+
+        window.onload = function() {
+            loadCollection();
+            renderCollection();
+        };
+
+        function loadCollection() {
+            try {
+                const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+                if (stored) {
+                    collection = JSON.parse(stored);
+                } else {
+                    collection = getInitialDemoCards();
+                    saveCollection();
+                }
+            } catch (e) {
+                console.error("Fehler beim Laden des Speicherstands:", e);
+                collection = [];
+            }
+        }
+
+        function saveCollection() {
+            try {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(collection));
+            } catch (e) {
+                console.error("Fehler beim Speichern:", e);
+            }
+        }
+
+        function renderCollection() {
+            const grid = document.getElementById('collection-grid');
+            const emptyState = document.getElementById('empty-state');
+            const filteredCards = getFilteredAndSortedCards();
+
+            updateHeaderStats();
+            updateRarityFilterOptions();
+
+            grid.innerHTML = '';
+
+            if (filteredCards.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                
+                filteredCards.forEach(card => {
+                    const qualityInfo = QUALITY_CONFIG[card.quality] || QUALITY_CONFIG['Near Mint'];
+                    const formattedPrice = (card.price !== undefined && card.price !== null) 
+                        ? card.price.toFixed(2).replace('.', ',') + ' €' 
+                        : 'k.A.';
+
+                    const cardEl = document.createElement('div');
+                    cardEl.className = 'card-holo bg-slate-900 border border-slate-800/80 rounded-2xl overflow-hidden flex flex-col justify-between shadow-lg relative group';
+                    
+                    cardEl.innerHTML = `
+                        <!-- Card Image -->
+                        <div class="relative bg-slate-950 p-3 aspect-[3/4] flex items-center justify-center overflow-hidden">
+                            <img src="${card.image}" alt="${card.name}" loading="lazy" class="max-h-full max-w-full object-contain drop-shadow-md rounded transition-transform duration-300 group-hover:scale-105">
+                            
+                            <!-- Action buttons -->
+                            <div class="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                                <button onclick="openEditModal('${card.id}')" title="Qualität/Preis anpassen" class="w-8 h-8 bg-slate-900/90 hover:bg-cm-blue text-white rounded-lg flex items-center justify-center shadow text-xs backdrop-blur-sm transition-colors">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button onclick="deleteCard('${card.id}')" title="Aus Sammlung entfernen" class="w-8 h-8 bg-slate-900/90 hover:bg-red-600 text-white rounded-lg flex items-center justify-center shadow text-xs backdrop-blur-sm transition-colors">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+
+                            <!-- Set Badge -->
+                            <div class="absolute top-2 left-2 max-w-[70%] z-10">
+                                <span class="bg-slate-950/85 text-slate-300 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-slate-800/80 backdrop-blur-sm truncate block">
+                                    ${card.setName}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Details & Cardmarket Info -->
+                        <div class="p-3 bg-slate-900 border-t border-slate-800/80 flex flex-col justify-between flex-grow">
+                            <div>
+                                <div class="flex items-start justify-between gap-1">
+                                    <h4 class="font-display font-bold text-slate-100 text-sm truncate" title="${card.name}">${card.name}</h4>
+                                    ${card.cmUrl ? `<a href="${card.cmUrl}" target="_blank" rel="noopener" title="Auf Cardmarket öffnen" class="text-cm-light hover:text-white text-xs shrink-0 mt-0.5"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>` : ''}
+                                </div>
+                                <p class="text-[11px] text-slate-400 flex items-center justify-between mt-0.5">
+                                    <span>${card.rarity || 'Common'}</span>
+                                    <span>#${card.number || '?'}</span>
+                                </p>
+                            </div>
+
+                            <!-- BOTTOM ROW: LEFT = QUALITY | RIGHT = CARDMARKET PRICE -->
+                            <div class="flex items-center justify-between mt-3 pt-2.5 border-t border-slate-800">
+                                <!-- UNTEN LINKS: Qualität / Zustand -->
+                                <div class="flex flex-col">
+                                    <span class="text-[8px] uppercase tracking-wider text-slate-500 font-bold block mb-0.5">Qualität</span>
+                                    <span class="text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${qualityInfo.class}" title="Qualität: ${card.quality}">
+                                        ${qualityInfo.short}
+                                    </span>
+                                </div>
+
+                                <!-- UNTEN RECHTS: Cardmarket Preis -->
+                                <div class="text-right">
+                                    <span class="text-[8px] uppercase tracking-wider text-slate-500 font-bold block mb-0.5">Cardmarket</span>
+                                    <span class="font-display font-extrabold text-sm text-emerald-400 leading-none block">
+                                        ${formattedPrice}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(cardEl);
+                });
+            }
+        }
+
+        function getFilteredAndSortedCards() {
+            const searchTerm = document.getElementById('filter-search').value.toLowerCase();
+            const qualityFilter = document.getElementById('filter-quality').value;
+            const rarityFilter = document.getElementById('filter-rarity').value;
+            const sortBy = document.getElementById('sort-by').value;
+
+            return collection.filter(card => {
+                const matchesSearch = card.name.toLowerCase().includes(searchTerm) || 
+                                     card.setName.toLowerCase().includes(searchTerm);
+                const matchesQuality = !qualityFilter || card.quality === qualityFilter;
+                const matchesRarity = !rarityFilter || card.rarity === rarityFilter;
+
+                return matchesSearch && matchesQuality && matchesRarity;
+            }).sort((a, b) => {
+                if (sortBy === 'price-desc') return (b.price || 0) - (a.price || 0);
+                if (sortBy === 'price-asc') return (a.price || 0) - (b.price || 0);
+                if (sortBy === 'name-asc') return a.name.localeCompare(b.name);
+                if (sortBy === 'date-desc') return b.addedTimestamp - a.addedTimestamp;
+                return 0;
+            });
+        }
+
+        function updateHeaderStats() {
+            const totalValue = collection.reduce((sum, card) => sum + (card.price || 0), 0);
+            document.getElementById('total-value').innerText = totalValue.toFixed(2).replace('.', ',') + ' €';
+            document.getElementById('total-count').innerText = collection.length + ' Stk.';
+        }
+
+        function updateRarityFilterOptions() {
+            const raritySelect = document.getElementById('filter-rarity');
+            const currentSelection = raritySelect.value;
+            const rarities = [...new Set(collection.map(c => c.rarity).filter(Boolean))].sort();
+
+            raritySelect.innerHTML = '<option value="">Alle Seltenheiten</option>';
+            rarities.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r;
+                opt.textContent = r;
+                if (r === currentSelection) opt.selected = true;
+                raritySelect.appendChild(opt);
+            });
+        }
+
+        function applyFilters() {
+            renderCollection();
+        }
+
+        async function handleCardmarketSearch(e) {
+            e.preventDefault();
+            const query = document.getElementById('api-search-input').value.trim();
+            if (!query) return;
+
+            const grid = document.getElementById('api-results-grid');
+            const spinner = document.getElementById('search-spinner');
+            const placeholder = document.getElementById('search-placeholder');
+
+            grid.innerHTML = '';
+            placeholder.classList.add('hidden');
+            spinner.classList.remove('hidden');
+
+            try {
+                // Querying Pokemon TCG API v2 which provides official Cardmarket market data
+                const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=name:"*${encodeURIComponent(query)}*"&pageSize=24`);
+                const data = await response.json();
+
+                spinner.classList.add('hidden');
+
+                if (!data.data || data.data.length === 0) {
+                    grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400">Keine Cardmarket-Treffer für "${query}" gefunden.</div>`;
+                    return;
+                }
+
+                data.data.forEach(card => {
+                    // Extract Cardmarket specific information
+                    let cmTrendPrice = 0;
+                    let cmUrl = "";
+                    let cmAvg30 = 0;
+
+                    if (card.cardmarket) {
+                        cmUrl = card.cardmarket.url || "";
+                        if (card.cardmarket.prices) {
+                            cmTrendPrice = card.cardmarket.prices.trendPrice || card.cardmarket.prices.averageSellPrice || 0;
+                            cmAvg30 = card.cardmarket.prices.avg30 || 0;
+                        }
+                    }
+
+                    const cardNode = document.createElement('div');
+                    cardNode.className = 'bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col justify-between hover:border-cm-light transition-all';
+                    
+                    const formattedTrend = cmTrendPrice ? cmTrendPrice.toFixed(2).replace('.', ',') + ' €' : 'k.A.';
+
+                    cardNode.innerHTML = `
+                        <div>
+                            <div class="aspect-[3/4] mb-2 flex items-center justify-center overflow-hidden bg-slate-900 rounded-lg p-1">
+                                <img src="${card.images.small}" alt="${card.name}" class="max-h-full object-contain rounded">
+                            </div>
+                            <h5 class="font-bold text-xs text-slate-200 truncate">${card.name}</h5>
+                            <p class="text-[10px] text-slate-400 truncate">${card.set.name} (#${card.number})</p>
+                        </div>
+
+                        <div class="mt-3 pt-2 border-t border-slate-800/80 space-y-2">
+                            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800">
+                                <div class="flex items-center justify-between text-[10px]">
+                                    <span class="text-slate-400 font-semibold">Cardmarket Trend:</span>
+                                    <span class="font-extrabold text-emerald-400">${formattedTrend}</span>
+                                </div>
+                                ${cmAvg30 ? `
+                                <div class="flex items-center justify-between text-[9px] mt-0.5 text-slate-500">
+                                    <span>⌀ 30 Tage:</span>
+                                    <span>${cmAvg30.toFixed(2).replace('.', ',')} €</span>
+                                </div>` : ''}
+                            </div>
+
+                            <div class="flex items-center justify-between gap-1">
+                                ${cmUrl ? `
+                                <a href="${cmUrl}" target="_blank" rel="noopener" class="text-[10px] text-cm-light hover:underline flex items-center gap-1">
+                                    <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i> CM Seite
+                                </a>` : '<span></span>'}
+
+                                <button onclick='selectCardToAdd(${JSON.stringify({
+                                    name: card.name,
+                                    image: card.images.small,
+                                    setName: card.set.name,
+                                    rarity: card.rarity || 'Unbekannt',
+                                    number: card.number,
+                                    price: cmTrendPrice,
+                                    cmUrl: cmUrl
+                                }).replace(/'/g, "&apos;")})' class="bg-cm-blue hover:bg-cm-light text-white text-xs font-bold px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 shadow">
+                                    <i class="fa-solid fa-plus text-[10px]"></i> Hinzufügen
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(cardNode);
+                });
+
+            } catch (err) {
+                console.error("Cardmarket API Fehler:", err);
+                spinner.classList.add('hidden');
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-red-400">Fehler beim Laden der Cardmarket Daten. Bitte versuche es erneut.</div>`;
+            }
+        }
+
+        function openAddModal() {
+            document.getElementById('add-modal').classList.remove('hidden');
+            document.getElementById('api-search-input').focus();
+        }
+
+        function closeAddModal() {
+            document.getElementById('add-modal').classList.add('hidden');
+        }
+
+        function selectCardToAdd(cardData) {
+            const qualityInput = prompt(`Qualität für "${cardData.name}" festlegen:\n\nMint (M), Near Mint (NM), Excellent (EX), Good (GD), Lightly Played (LP), Played (PL), Poor (PO)`, "Near Mint");
+            
+            let finalQuality = "Near Mint";
+            if (qualityInput) {
+                const trimmed = qualityInput.trim();
+                if (QUALITY_CONFIG[trimmed]) {
+                    finalQuality = trimmed;
+                } else {
+                    const foundKey = Object.keys(QUALITY_CONFIG).find(
+                        k => k.toLowerCase() === trimmed.toLowerCase() || QUALITY_CONFIG[k].short.toLowerCase() === trimmed.toLowerCase()
+                    );
+                    if (foundKey) finalQuality = foundKey;
+                }
+            }
+
+            const newCard = {
+                id: 'cm_card_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                name: cardData.name,
+                image: cardData.image,
+                setName: cardData.setName,
+                rarity: cardData.rarity,
+                number: cardData.number,
+                price: parseFloat(cardData.price) || 0,
+                cmUrl: cardData.cmUrl || "",
+                quality: finalQuality,
+                addedTimestamp: Date.now()
+            };
+
+            collection.unshift(newCard);
+            saveCollection();
+            renderCollection();
+            closeAddModal();
+        }
+
+        function openEditModal(cardId) {
+            const card = collection.find(c => c.id === cardId);
+            if (!card) return;
+
+            document.getElementById('edit-card-id').value = card.id;
+            document.getElementById('edit-card-quality').value = card.quality || 'Near Mint';
+            document.getElementById('edit-card-price').value = card.price !== undefined ? card.price : '';
+
+            const previewContainer = document.getElementById('edit-card-preview');
+            previewContainer.innerHTML = `
+                <img src="${card.image}" class="w-12 h-16 object-contain rounded">
+                <div>
+                    <h5 class="font-bold text-sm text-slate-100">${card.name}</h5>
+                    <p class="text-xs text-slate-400">${card.setName} (${card.rarity})</p>
+                </div>
+            `;
+
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
+        }
+
+        function saveCardEdit(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-card-id').value;
+            const quality = document.getElementById('edit-card-quality').value;
+            const priceVal = document.getElementById('edit-card-price').value;
+
+            const card = collection.find(c => c.id === id);
+            if (card) {
+                card.quality = quality;
+                if (priceVal !== '') {
+                    card.price = parseFloat(priceVal) || 0;
+                }
+                saveCollection();
+                renderCollection();
+            }
+            closeEditModal();
+        }
+
+        function deleteCard(cardId) {
+            if (confirm("Möchtest du diese Karte wirklich aus deiner Cardmarket-Sammlung entfernen?")) {
+                collection = collection.filter(c => c.id !== cardId);
+                saveCollection();
+                renderCollection();
+            }
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(collection, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `pokemon_sammlung_backup_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importData(event) {
+            const fileReader = new FileReader();
+            fileReader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        collection = imported;
+                        saveCollection();
+                        renderCollection();
+                        alert("Sammlung erfolgreich importiert!");
+                    } else {
+                        alert("Ungültiges Dateiformat.");
+                    }
+                } catch (err) {
+                    alert("Fehler beim Lesen der Datei.");
+                }
+            };
+            if (event.target.files[0]) {
+                fileReader.readAsText(event.target.files[0]);
+            }
+        }
+
+        function getInitialDemoCards() {
+            return [
+                {
+                    id: 'demo_cm_1',
+                    name: 'Charizard ex',
+                    image: 'https://images.pokemontcg.io/sv3pt5/199_hires.png',
+                    setName: '151',
+                    rarity: 'Special Illustration Rare',
+                    number: '199',
+                    price: 185.50,
+                    cmUrl: 'https://www.cardmarket.com/en/Pokemon',
+                    quality: 'Near Mint',
+                    addedTimestamp: Date.now() - 100000
+                },
+                {
+                    id: 'demo_cm_2',
+                    name: 'Umbreon VMAX',
+                    image: 'https://images.pokemontcg.io/swsh7/215_hires.png',
+                    setName: 'Evolving Skies',
+                    rarity: 'Rare Holo Alternate Art',
+                    number: '215',
+                    price: 640.00,
+                    cmUrl: 'https://www.cardmarket.com/en/Pokemon',
+                    quality: 'Mint',
+                    addedTimestamp: Date.now() - 80000
+                },
+                {
+                    id: 'demo_cm_3',
+                    name: 'Pikachu',
+                    image: 'https://images.pokemontcg.io/base1/58_hires.png',
+                    setName: 'Base Set',
+                    rarity: 'Common',
+                    number: '58',
+                    price: 4.20,
+                    cmUrl: 'https://www.cardmarket.com/en/Pokemon',
+                    quality: 'Excellent',
+                    addedTimestamp: Date.now() - 60000
+                }
+            ];
+        }
+    </script>
+</body>
+</html>
