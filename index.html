@@ -1,23 +1,31 @@
 <!DOCTYPE html>
-<html lang="de" class="h-full bg-slate-950 text-slate-100">
+<html lang="de" class="h-full bg-slate-950 text-slate-100 selection:bg-cm-blue selection:text-white">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pokémon Sammlung - Cardmarket Manager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- iOS / iPhone Specific Meta Tags for PWA & Mobile Web Apps -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Pokémon Sammlung">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="theme-color" content="#020617">
+
+    <title>Pokémon Sammlung - Cardmarket & Binder Manager</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
                         display: ['Outfit', 'sans-serif'],
                     },
                     colors: {
@@ -38,15 +46,41 @@
     </script>
 
     <style>
+        /* Safe Area Insets for iPhone Notch / Dynamic Island / Home Indicator */
+        :root {
+            --sat: env(safe-area-inset-top, 0px);
+            --sab: env(safe-area-inset-bottom, 0px);
+            --sal: env(safe-area-inset-left, 0px);
+            --sar: env(safe-area-inset-right, 0px);
+        }
+
+        body {
+            padding-top: var(--sat);
+            padding-left: var(--sal);
+            padding-right: var(--sar);
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            touch-action: manipulation;
+        }
+
+        /* Safe area spacing utility classes */
+        .pt-safe { padding-top: var(--sat); }
+        .pb-safe { padding-bottom: calc(var(--sab) + 4rem); }
+        .mb-safe { margin-bottom: var(--sab); }
+
         .card-holo {
             position: relative;
             overflow: hidden;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transition: transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.25s ease;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
         }
         
-        .card-holo:hover {
-            transform: translateY(-6px) scale(1.02);
-            box-shadow: 0 12px 25px -5px rgba(0, 85, 165, 0.3), 0 8px 10px -6px rgba(255, 222, 0, 0.2);
+        @media (min-width: 768px) {
+            .card-holo:hover {
+                transform: translateY(-5px) scale(1.02);
+                box-shadow: 0 12px 25px -5px rgba(0, 85, 165, 0.35), 0 8px 10px -6px rgba(255, 222, 0, 0.2);
+            }
         }
 
         .card-holo::before {
@@ -66,7 +100,7 @@
             );
             transform: rotate(-30deg);
             opacity: 0;
-            transition: opacity 0.5s ease;
+            transition: opacity 0.4s ease;
             pointer-events: none;
         }
 
@@ -83,73 +117,114 @@
         .badge-pl { background-color: #dc2626; color: #fef2f2; }
         .badge-po { background-color: #881337; color: #fef2f2; }
 
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        /* Binder Pocket Styling */
+        .binder-pocket {
+            background: rgba(15, 23, 42, 0.85);
+            border: 2px dashed rgba(51, 65, 85, 0.7);
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        .binder-pocket.has-card {
+            border: 1px solid rgba(51, 65, 85, 0.9);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Fast Smooth iOS Scrolling */
+        .ios-scroll {
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #090d16; }
         ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #334155; }
     </style>
 </head>
-<body class="min-h-full flex flex-col font-sans bg-slate-950 text-slate-100">
+<body class="min-h-full flex flex-col font-sans bg-slate-950 text-slate-100 pb-safe">
 
-    <header class="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 shadow-xl">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <header class="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-lg border-b border-slate-800 shadow-xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3.5">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
                 
-                <!-- Logo -->
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cm-blue to-blue-500 flex items-center justify-center border border-blue-400/30 shadow-md">
-                        <i class="fa-solid fa-store text-poke-yellow text-lg"></i>
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <h1 class="font-display font-extrabold text-2xl tracking-wide bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
-                                Pokémon Sammlung
-                            </h1>
-                            <span class="bg-cm-blue text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                Cardmarket Sync
-                            </span>
+                <!-- Brand Title with BINDER & CARDMARKET Badge -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2.5 sm:space-x-3">
+                        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-cm-blue to-blue-500 flex items-center justify-center border border-blue-400/30 shadow-md shrink-0">
+                            <i class="fa-solid fa-book-open text-poke-yellow text-base sm:text-lg"></i>
                         </div>
-                        <p class="text-xs text-slate-400">Cardmarket Marktpreise & Qualitätsverwaltung</p>
+                        <div>
+                            <div class="flex items-center gap-1.5 sm:gap-2">
+                                <h1 class="font-display font-extrabold text-lg sm:text-2xl tracking-wide bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
+                                    Pokémon Sammlung
+                                </h1>
+                                <span class="bg-gradient-to-r from-cm-blue via-blue-600 to-emerald-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider inline-flex items-center gap-1 shadow-sm border border-white/10">
+                                    <i class="fa-solid fa-book text-[8px]"></i> BINDER & CARDMARKET
+                                </span>
+                            </div>
+                            <p class="text-[11px] sm:text-xs text-slate-400">Cardmarket Marktpreise & iOS Sammelalben Manager</p>
+                        </div>
+                    </div>
+
+                    <!-- View Switcher (Mobile Inline Header) -->
+                    <div class="flex lg:hidden items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+                        <button onclick="switchView('grid')" id="view-btn-grid-mb" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all bg-cm-blue text-white flex items-center gap-1">
+                            <i class="fa-solid fa-grip"></i> Grid
+                        </button>
+                        <button onclick="switchView('binder')" id="view-btn-binder-mb" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all text-slate-400 flex items-center gap-1">
+                            <i class="fa-solid fa-book-open"></i> 3x3 Album
+                        </button>
                     </div>
                 </div>
 
-                <!-- Collection Stats & Controls -->
-                <div class="flex items-center justify-between md:justify-end gap-3">
+                <!-- Stats & Controls Bar -->
+                <div class="flex items-center justify-between lg:justify-end gap-2.5 sm:gap-3">
                     
-                    <!-- Total Value Cardmarket -->
-                    <div class="bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-2 flex items-center shadow-inner">
-                        <div class="mr-3 p-2 bg-emerald-500/10 text-emerald-400 rounded-lg">
-                            <i class="fa-solid fa-euro-sign text-lg"></i>
+                    <!-- View Switcher (Desktop) -->
+                    <div class="hidden lg:flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+                        <button onclick="switchView('grid')" id="view-btn-grid" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-cm-blue text-white flex items-center gap-1.5">
+                            <i class="fa-solid fa-grip"></i> Alle Karten
+                        </button>
+                        <button onclick="switchView('binder')" id="view-btn-binder" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-slate-400 hover:text-white flex items-center gap-1.5">
+                            <i class="fa-solid fa-book-open"></i> Binder Album
+                        </button>
+                    </div>
+
+                    <!-- Total Value (Cardmarket) -->
+                    <div class="flex-1 sm:flex-none bg-slate-950/90 border border-slate-800 rounded-xl px-3 py-1.5 flex items-center shadow-inner">
+                        <div class="mr-2 p-1.5 bg-emerald-500/10 text-emerald-400 rounded-lg">
+                            <i class="fa-solid fa-euro-sign text-xs sm:text-sm"></i>
                         </div>
                         <div>
-                            <span class="text-[10px] uppercase font-semibold tracking-wider text-slate-400 block">Gesamtwert (CM)</span>
-                            <span id="total-value" class="font-display text-lg font-bold text-emerald-400">0,00 €</span>
+                            <span class="text-[8px] sm:text-[9px] uppercase font-bold tracking-wider text-slate-400 block">Gesamtwert</span>
+                            <span id="total-value" class="font-display text-xs sm:text-base font-extrabold text-emerald-400">0,00 €</span>
                         </div>
                     </div>
 
-                    <!-- Card Counter -->
-                    <div class="bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-2 flex items-center shadow-inner">
-                        <div class="mr-3 p-2 bg-cm-blue/20 text-cm-light rounded-lg">
-                            <i class="fa-solid fa-layer-group text-lg"></i>
+                    <!-- Total Cards Count -->
+                    <div class="flex-1 sm:flex-none bg-slate-950/90 border border-slate-800 rounded-xl px-3 py-1.5 flex items-center shadow-inner">
+                        <div class="mr-2 p-1.5 bg-cm-blue/20 text-cm-light rounded-lg">
+                            <i class="fa-solid fa-layer-group text-xs sm:text-sm"></i>
                         </div>
                         <div>
-                            <span class="text-[10px] uppercase font-semibold tracking-wider text-slate-400 block">Karten</span>
-                            <span id="total-count" class="font-display text-lg font-bold text-cm-light">0 Stk.</span>
+                            <span class="text-[8px] sm:text-[9px] uppercase font-bold tracking-wider text-slate-400 block">Karten</span>
+                            <span id="total-count" class="font-display text-xs sm:text-base font-extrabold text-cm-light">0 Stk.</span>
                         </div>
                     </div>
 
-                    <!-- Import/Export & Add Buttons -->
-                    <div class="flex items-center gap-2">
-                        <button onclick="exportData()" title="Sammlung Exportieren (JSON)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 p-2.5 rounded-xl border border-slate-700 text-sm transition-all">
+                    <!-- Global Quick Actions -->
+                    <div class="hidden sm:flex items-center gap-1.5">
+                        <button onclick="exportData()" title="Sammlung Exportieren (JSON)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 p-2 rounded-xl border border-slate-700 text-xs transition-all">
                             <i class="fa-solid fa-download"></i>
                         </button>
-                        <button onclick="document.getElementById('import-file-input').click()" title="Sammlung Importieren" class="bg-slate-800 hover:bg-slate-700 text-slate-200 p-2.5 rounded-xl border border-slate-700 text-sm transition-all">
+                        <button onclick="document.getElementById('import-file-input').click()" title="Sammlung Importieren" class="bg-slate-800 hover:bg-slate-700 text-slate-200 p-2 rounded-xl border border-slate-700 text-xs transition-all">
                             <i class="fa-solid fa-upload"></i>
                         </button>
                         <input type="file" id="import-file-input" accept=".json" onchange="importData(event)" class="hidden">
 
-                        <button onclick="openAddModal()" class="bg-gradient-to-r from-cm-blue to-blue-600 hover:from-cm-darkblue hover:to-blue-700 text-white font-semibold py-2.5 px-4 rounded-xl shadow-lg shadow-blue-900/30 transition-all flex items-center gap-2 text-sm">
-                            <i class="fa-solid fa-magnifying-glass"></i>
+                        <button onclick="openAddModal()" class="bg-gradient-to-r from-cm-blue to-blue-600 hover:from-cm-darkblue hover:to-blue-700 text-white font-semibold py-2 px-3 rounded-xl shadow-lg shadow-blue-900/30 transition-all flex items-center gap-1.5 text-xs">
+                            <i class="fa-solid fa-cart-shopping"></i>
                             <span>Cardmarket Suche</span>
                         </button>
                     </div>
@@ -158,15 +233,35 @@
         </div>
     </header>
 
-    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <main class="flex-grow max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
 
-        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <!-- Binder Manager Bar -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4 shadow-lg space-y-2.5">
+            <div class="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-book text-cm-light text-base sm:text-lg"></i>
+                    <h2 class="font-display font-bold text-sm sm:text-base text-slate-100">Meine Binders (Sammelalben)</h2>
+                </div>
+
+                <button onclick="openNewBinderModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold px-2.5 py-1.5 rounded-xl text-xs border border-slate-700 transition-all flex items-center gap-1">
+                    <i class="fa-solid fa-plus text-xs"></i><span class="hidden sm:inline">Neues Binder</span>
+                </button>
+            </div>
+
+            <!-- Binder Scrollable Pills for iPhone Touch -->
+            <div id="binder-list" class="flex gap-2 overflow-x-auto pb-1 ios-scroll">
+                <!-- Dynamically Populated -->
+            </div>
+        </section>
+
+        <section id="filter-section" class="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4 shadow-lg">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
                 
                 <!-- Search Filter -->
                 <div class="relative">
                     <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-                    <input type="text" id="filter-search" oninput="applyFilters()" placeholder="In deiner Sammlung suchen..." 
+                    <input type="text" id="filter-search" oninput="applyFilters()" placeholder="Kartenname / Set suchen..." 
+                           autocorrect="off" autocapitalize="off"
                            class="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none focus:border-cm-light text-slate-200 placeholder-slate-500">
                 </div>
 
@@ -203,15 +298,15 @@
             </div>
         </section>
 
-        <section>
+        <section id="grid-view-container">
             <!-- Empty State -->
-            <div id="empty-state" class="hidden text-center py-20 bg-slate-900/40 border border-dashed border-slate-800 rounded-2xl">
-                <div class="w-16 h-16 mx-auto mb-4 text-slate-600 flex items-center justify-center rounded-2xl bg-slate-800/50">
-                    <i class="fa-solid fa-store text-2xl"></i>
+            <div id="empty-state" class="hidden text-center py-16 sm:py-20 bg-slate-900/40 border border-dashed border-slate-800 rounded-2xl px-4">
+                <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-3 text-slate-600 flex items-center justify-center rounded-2xl bg-slate-800/50">
+                    <i class="fa-solid fa-book-bookmark text-2xl"></i>
                 </div>
-                <h3 class="text-base font-semibold text-slate-300">Deine Cardmarket-Sammlung ist leer</h3>
+                <h3 class="text-sm sm:text-base font-semibold text-slate-300">Keine Karten gefunden</h3>
                 <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1">
-                    Nutze die Suche oben rechts, um Pokémon-Karten mit echten Cardmarket-Preisen hinzuzufügen.
+                    Nutze die Cardmarket Suche, um neue Karten hinzuzufügen oder wähle ein anderes Binder.
                 </p>
                 <button onclick="openAddModal()" class="mt-4 bg-cm-blue hover:bg-cm-light text-white font-medium py-2 px-4 rounded-xl text-xs transition-all inline-flex items-center gap-2">
                     <i class="fa-solid fa-plus"></i> Karte über Cardmarket suchen
@@ -219,24 +314,95 @@
             </div>
 
             <!-- Collection Grid -->
-            <div id="collection-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+            <div id="collection-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-5">
                 <!-- Dynamically populated -->
             </div>
         </section>
+
+        <section id="binder-view-container" class="hidden space-y-3 sm:space-y-4">
+            <!-- Album Top Navigation -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-2.5 shadow-lg">
+                <div class="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-start">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-xl bg-poke-yellow/10 text-poke-yellow flex items-center justify-center font-bold text-xs">
+                            <i class="fa-solid fa-book"></i>
+                        </div>
+                        <div>
+                            <h3 id="active-binder-title" class="font-display font-bold text-sm sm:text-base leading-tight">Binder Name</h3>
+                            <p id="active-binder-stats" class="text-[10px] sm:text-xs text-slate-400">Seite 1 von 1 • 0 Karten</p>
+                        </div>
+                    </div>
+                    <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full sm:hidden">Swipe ◄ ►</span>
+                </div>
+
+                <!-- Page Navigation Controls -->
+                <div class="flex items-center justify-between w-full sm:w-auto gap-2 border-t sm:border-t-0 border-slate-800/80 pt-2 sm:pt-0">
+                    <button onclick="changePage(-1)" id="prev-page-btn" class="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-700 transition-all flex items-center justify-center gap-1">
+                        <i class="fa-solid fa-chevron-left text-[10px]"></i> Vorherige
+                    </button>
+                    <span id="page-indicator" class="text-xs font-bold text-cm-light px-2 shrink-0">Seite 1</span>
+                    <button onclick="changePage(1)" id="next-page-btn" class="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-700 transition-all flex items-center justify-center gap-1">
+                        Nächste <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3x3 Binder Album Frame with Touch Swipe Zone -->
+            <div id="binder-touch-zone" class="bg-slate-900/90 border-2 border-slate-800 rounded-2xl sm:rounded-3xl p-2.5 sm:p-5 shadow-2xl relative overflow-hidden backdrop-blur-md select-none">
+                <!-- Binder Ring Graphics (Desktop & iPad) -->
+                <div class="hidden md:flex absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-8 flex-col justify-between py-8 pointer-events-none z-10 opacity-30">
+                    <div class="w-6 h-3 bg-gradient-to-r from-slate-600 to-slate-400 rounded-full shadow-md"></div>
+                    <div class="w-6 h-3 bg-gradient-to-r from-slate-600 to-slate-400 rounded-full shadow-md"></div>
+                    <div class="w-6 h-3 bg-gradient-to-r from-slate-600 to-slate-400 rounded-full shadow-md"></div>
+                    <div class="w-6 h-3 bg-gradient-to-r from-slate-600 to-slate-400 rounded-full shadow-md"></div>
+                </div>
+
+                <!-- 9-Slot Pocket Grid (3x3 on iPhone & Desktop) -->
+                <div id="binder-pocket-grid" class="grid grid-cols-3 gap-1.5 sm:gap-4 min-h-[380px] sm:min-h-[500px]">
+                    <!-- Dynamically Populated 9 Pockets -->
+                </div>
+            </div>
+        </section>
+
     </main>
 
-    <div id="add-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+    <nav class="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 px-3 py-2 flex items-center justify-around shadow-2xl mb-safe">
+        <button onclick="switchView('grid')" class="flex flex-col items-center gap-0.5 text-slate-400 focus:text-cm-light">
+            <i class="fa-solid fa-grip text-base"></i>
+            <span class="text-[9px] font-medium">Grid</span>
+        </button>
+        <button onclick="switchView('binder')" class="flex flex-col items-center gap-0.5 text-slate-400 focus:text-cm-light">
+            <i class="fa-solid fa-book-open text-base"></i>
+            <span class="text-[9px] font-medium">3x3 Binder</span>
+        </button>
+        <button onclick="openAddModal()" class="w-10 h-10 rounded-full bg-gradient-to-tr from-cm-blue to-blue-500 text-white flex items-center justify-center shadow-lg -mt-4 border-2 border-slate-900">
+            <i class="fa-solid fa-cart-shopping text-sm"></i>
+        </button>
+        <button onclick="exportData()" class="flex flex-col items-center gap-0.5 text-slate-400">
+            <i class="fa-solid fa-download text-base"></i>
+            <span class="text-[9px] font-medium">Export</span>
+        </button>
+        <button onclick="document.getElementById('import-file-input').click()" class="flex flex-col items-center gap-0.5 text-slate-400">
+            <i class="fa-solid fa-upload text-base"></i>
+            <span class="text-[9px] font-medium">Import</span>
+        </button>
+    </nav>
+
+    <div id="add-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-2xl w-full max-w-4xl max-h-[85vh] sm:max-h-[90vh] flex flex-col shadow-2xl overflow-hidden mb-safe">
             
-            <!-- Modal Header -->
-            <div class="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-cm-blue/20 text-cm-light flex items-center justify-center font-bold text-sm">
+            <!-- Modal Header with Restored Logo -->
+            <div class="p-3.5 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900 shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-cm-blue text-white flex items-center justify-center font-bold text-xs shadow">
                         <i class="fa-solid fa-cart-shopping"></i>
                     </div>
                     <div>
-                        <h2 class="font-display text-lg font-bold">Cardmarket Kartensuche</h2>
-                        <p class="text-[11px] text-slate-400">Durchsuche aktuelle Pokémon-Karten & Cardmarket Preistrends</p>
+                        <div class="flex items-center gap-1.5">
+                            <h2 class="font-display text-sm sm:text-lg font-bold">Cardmarket Kartensuche</h2>
+                            <span class="bg-cm-blue text-white text-[8px] sm:text-[9px] font-extrabold px-1.5 py-0.5 rounded-full uppercase">CARDMARKET</span>
+                        </div>
+                        <p class="text-[10px] sm:text-[11px] text-slate-400">Pokémon-Karten & Cardmarket Preistrends</p>
                     </div>
                 </div>
                 <button onclick="closeAddModal()" class="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition-colors">
@@ -245,58 +411,68 @@
             </div>
 
             <!-- Search Form Bar -->
-            <div class="p-4 border-b border-slate-800 bg-slate-950">
+            <div class="p-3 sm:p-4 border-b border-slate-800 bg-slate-950 shrink-0">
                 <form onsubmit="handleCardmarketSearch(event)" class="flex gap-2">
                     <div class="relative flex-grow">
-                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
-                        <input type="text" id="api-search-input" placeholder="Pokémon Name oder Kartennummer (z.B. Glurak, Charizard ex, Pikachu 151)..." required
-                               class="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cm-light">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                        <input type="text" id="api-search-input" placeholder="Glurak, Charizard ex, Pikachu 151..." required
+                               autocorrect="off" autocapitalize="off"
+                               class="w-full pl-8 pr-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cm-light">
                     </div>
-                    <button type="submit" id="api-search-btn" class="bg-cm-blue hover:bg-cm-light text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-all flex items-center gap-2 shrink-0 shadow-md">
-                        <i class="fa-solid fa-magnifying-glass"></i> Suchen
+                    <button type="submit" id="api-search-btn" class="bg-cm-blue hover:bg-cm-light text-white font-semibold px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-1.5 shrink-0 shadow-md">
+                        <i class="fa-solid fa-magnifying-glass text-[10px]"></i> Suchen
                     </button>
                 </form>
             </div>
 
             <!-- Search Results Display -->
-            <div id="search-results-container" class="p-4 sm:p-6 overflow-y-auto flex-grow space-y-4 max-h-[60vh]">
-                <div id="search-placeholder" class="text-center py-16 text-slate-500">
-                    <i class="fa-solid fa-box-archive text-4xl mb-3 block text-slate-700"></i>
-                    <p class="text-xs">Gib einen Kartennamen ein, um direkt auf Cardmarket Preistrends (Trend, Avg 30, Low) zuzugreifen.</p>
+            <div id="search-results-container" class="p-3 sm:p-6 overflow-y-auto flex-grow space-y-4 ios-scroll">
+                <div id="search-placeholder" class="text-center py-12 text-slate-500">
+                    <i class="fa-solid fa-box-archive text-3xl mb-2 block text-slate-700"></i>
+                    <p class="text-xs">Gib einen Kartennamen ein, um direkt auf Cardmarket Preistrends zuzugreifen.</p>
                 </div>
                 
-                <div id="search-spinner" class="hidden text-center py-16">
-                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-slate-700 border-t-cm-light"></div>
-                    <p class="text-slate-400 text-xs mt-3">Lade Cardmarket Marktdaten...</p>
+                <div id="search-spinner" class="hidden text-center py-12">
+                    <div class="inline-block animate-spin rounded-full h-7 w-7 border-3 border-slate-700 border-t-cm-light"></div>
+                    <p class="text-slate-400 text-xs mt-2.5">Lade Cardmarket Marktdaten...</p>
                 </div>
 
                 <!-- API Cards Grid -->
-                <div id="api-results-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div id="api-results-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4">
                     <!-- Dynamic Search Results -->
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="edit-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+    <div id="edit-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-4 sm:p-6 shadow-2xl relative mb-safe">
             <button onclick="closeEditModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
             
-            <h3 class="font-display text-lg font-bold mb-4 flex items-center gap-2">
-                <i class="fa-solid fa-sliders text-cm-light"></i> Karte in Sammlung anpassen
+            <h3 class="font-display text-base sm:text-lg font-bold mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-sliders text-cm-light"></i> Karte bearbeiten
             </h3>
 
-            <div id="edit-card-preview" class="flex gap-4 items-center mb-5 bg-slate-950 p-3 rounded-xl border border-slate-800">
-                <!-- Preview image & card summary -->
+            <div id="edit-card-preview" class="flex gap-3 items-center mb-4 bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                <!-- Dynamic Preview -->
             </div>
 
-            <form id="edit-card-form" onsubmit="saveCardEdit(event)" class="space-y-4">
+            <form id="edit-card-form" onsubmit="saveCardEdit(event)" class="space-y-3">
                 <input type="hidden" id="edit-card-id">
 
+                <!-- Binder Select -->
                 <div>
-                    <label class="block text-xs uppercase font-semibold text-slate-400 mb-1.5">Qualität / Zustand (Links unten)</label>
+                    <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Sammelordner / Binder</label>
+                    <select id="edit-card-binder" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-cm-light">
+                        <!-- Dynamic Binder Options -->
+                    </select>
+                </div>
+
+                <!-- Quality Select -->
+                <div>
+                    <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Qualität / Zustand (Unten Links)</label>
                     <select id="edit-card-quality" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-cm-light">
                         <option value="Mint">Mint (M) - Perfekt</option>
                         <option value="Near Mint" selected>Near Mint (NM) - Fast Makellos</option>
@@ -308,11 +484,31 @@
                     </select>
                 </div>
 
+                <!-- Foil & Language Controls -->
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Foil Typ</label>
+                        <select id="edit-card-foil" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-cm-light">
+                            <option value="Standard">Standard / Normal</option>
+                            <option value="Holo">Holo</option>
+                            <option value="Reverse Holo">Reverse Holo</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Sprache</label>
+                        <select id="edit-card-lang" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-cm-light">
+                            <option value="DE">Deutsch (DE)</option>
+                            <option value="EN">Englisch (EN)</option>
+                            <option value="JP">Japanisch (JP)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Price Override -->
                 <div>
-                    <label class="block text-xs uppercase font-semibold text-slate-400 mb-1.5">Cardmarket Preis Override (€) (Rechts unten)</label>
+                    <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Cardmarket Preis Override (€) (Unten Rechts)</label>
                     <input type="number" id="edit-card-price" step="0.01" min="0" placeholder="Cardmarket Trendpreis überschreiben..." 
                            class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-cm-light">
-                    <p class="text-[10px] text-slate-500 mt-1">Lass dieses Feld leer, um den automatischen Cardmarket-Trendpreis beizubehalten.</p>
                 </div>
 
                 <div class="flex justify-end gap-2 pt-2">
@@ -327,9 +523,42 @@
         </div>
     </div>
 
+    <div id="binder-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-4 sm:p-5 shadow-2xl relative">
+            <button onclick="closeBinderModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <h3 class="font-display text-base font-bold mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-book-medical text-cm-light"></i> Neues Binder erstellen
+            </h3>
+            <form onsubmit="handleCreateBinder(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Binder Name</label>
+                    <input type="text" id="binder-name-input" required placeholder="z.B. Glurak Sammlung, Set 151..." 
+                           autocorrect="off"
+                           class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-cm-light">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeBinderModal()" class="px-3 py-1.5 bg-slate-800 text-xs rounded-xl">Abbrechen</button>
+                    <button type="submit" class="px-3 py-1.5 bg-cm-blue text-xs rounded-xl font-bold">Erstellen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
-        const LOCAL_STORAGE_KEY = 'pokemon_sammlung_cm_cards_v2';
+        const LOCAL_STORAGE_CARDS = 'pokemon_sammlung_cm_cards_v3';
+        const LOCAL_STORAGE_BINDERS = 'pokemon_sammlung_cm_binders_v3';
+
         let collection = [];
+        let binders = [];
+        let activeBinderId = 'all'; // 'all' or specific binder ID
+        let currentView = 'grid'; // 'grid' or 'binder'
+        let binderCurrentPage = 1;
+
+        // Touch Swipe Variables for iPhone gesture
+        let touchStartX = 0;
+        let touchEndX = 0;
 
         // Quality mappings (Shortcodes & Badge styling)
         const QUALITY_CONFIG = {
@@ -343,31 +572,158 @@
         };
 
         window.onload = function() {
-            loadCollection();
+            loadState();
+            renderBinderBar();
             renderCollection();
+            setupTouchGestures();
         };
 
-        function loadCollection() {
+        function setupTouchGestures() {
+            const touchZone = document.getElementById('binder-touch-zone');
+            if (!touchZone) return;
+
+            touchZone.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].screenX;
+            }, { passive: true });
+
+            touchZone.addEventListener('touchend', (e) => {
+                touchEndX = e.changedTouches[0].screenX;
+                handleSwipeGesture();
+            }, { passive: true });
+        }
+
+        function handleSwipeGesture() {
+            const swipeDistance = touchEndX - touchStartX;
+            const minSwipeDistance = 45; // threshold in pixels
+
+            if (swipeDistance < -minSwipeDistance) {
+                // Swipe Left -> Next Page
+                changePage(1);
+            } else if (swipeDistance > minSwipeDistance) {
+                // Swipe Right -> Prev Page
+                changePage(-1);
+            }
+        }
+
+        function loadState() {
             try {
-                const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-                if (stored) {
-                    collection = JSON.parse(stored);
+                const storedBinders = localStorage.getItem(LOCAL_STORAGE_BINDERS);
+                if (storedBinders) {
+                    binders = JSON.parse(storedBinders);
+                } else {
+                    binders = [
+                        { id: 'b_main', name: 'Hauptsammlung', isDefault: true },
+                        { id: 'b_rare', name: 'Seltene Hits', isDefault: false }
+                    ];
+                    localStorage.setItem(LOCAL_STORAGE_BINDERS, JSON.stringify(binders));
+                }
+
+                const storedCards = localStorage.getItem(LOCAL_STORAGE_CARDS);
+                if (storedCards) {
+                    collection = JSON.parse(storedCards);
                 } else {
                     collection = getInitialDemoCards();
                     saveCollection();
                 }
             } catch (e) {
-                console.error("Fehler beim Laden des Speicherstands:", e);
-                collection = [];
+                console.error("Fehler beim Laden:", e);
             }
         }
 
         function saveCollection() {
-            try {
-                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(collection));
-            } catch (e) {
-                console.error("Fehler beim Speichern:", e);
+            localStorage.setItem(LOCAL_STORAGE_CARDS, JSON.stringify(collection));
+        }
+
+        function saveBinders() {
+            localStorage.setItem(LOCAL_STORAGE_BINDERS, JSON.stringify(binders));
+        }
+
+        function switchView(view) {
+            currentView = view;
+            
+            // Buttons Desktop
+            document.getElementById('view-btn-grid').className = view === 'grid' ? 'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-cm-blue text-white flex items-center gap-1.5' : 'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-slate-400 hover:text-white flex items-center gap-1.5';
+            document.getElementById('view-btn-binder').className = view === 'binder' ? 'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-cm-blue text-white flex items-center gap-1.5' : 'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-slate-400 hover:text-white flex items-center gap-1.5';
+
+            // Buttons Mobile
+            document.getElementById('view-btn-grid-mb').className = view === 'grid' ? 'px-2.5 py-1 rounded-lg text-xs font-semibold transition-all bg-cm-blue text-white flex items-center gap-1' : 'px-2.5 py-1 rounded-lg text-xs font-semibold transition-all text-slate-400 flex items-center gap-1';
+            document.getElementById('view-btn-binder-mb').className = view === 'binder' ? 'px-2.5 py-1 rounded-lg text-xs font-semibold transition-all bg-cm-blue text-white flex items-center gap-1' : 'px-2.5 py-1 rounded-lg text-xs font-semibold transition-all text-slate-400 flex items-center gap-1';
+
+            const filterSection = document.getElementById('filter-section');
+            const gridContainer = document.getElementById('grid-view-container');
+            const binderContainer = document.getElementById('binder-view-container');
+
+            if (view === 'grid') {
+                filterSection.classList.remove('hidden');
+                gridContainer.classList.remove('hidden');
+                binderContainer.classList.add('hidden');
+                renderCollection();
+            } else {
+                filterSection.classList.add('hidden');
+                gridContainer.classList.add('hidden');
+                binderContainer.classList.remove('hidden');
+                binderCurrentPage = 1;
+                renderVirtualBinderPage();
             }
+        }
+
+        function selectBinder(binderId) {
+            activeBinderId = binderId;
+            binderCurrentPage = 1;
+            renderBinderBar();
+            if (currentView === 'grid') {
+                renderCollection();
+            } else {
+                renderVirtualBinderPage();
+            }
+        }
+
+        function renderBinderBar() {
+            const list = document.getElementById('binder-list');
+            list.innerHTML = '';
+
+            const totalCardsCount = collection.length;
+
+            const allBtn = document.createElement('button');
+            allBtn.onclick = () => selectBinder('all');
+            allBtn.className = `shrink-0 px-3 py-1.5 sm:py-2 rounded-xl text-xs font-semibold flex items-center gap-2 border transition-all ${
+                activeBinderId === 'all' 
+                ? 'bg-cm-blue text-white border-cm-light shadow-md' 
+                : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
+            }`;
+            allBtn.innerHTML = `
+                <i class="fa-solid fa-layer-group text-xs"></i>
+                <span>Alle</span>
+                <span class="bg-slate-900/60 px-1.5 py-0.5 rounded-md text-[10px] text-slate-300">${totalCardsCount}</span>
+            `;
+            list.appendChild(allBtn);
+
+            // Dynamic Binders
+            binders.forEach(b => {
+                const bCards = collection.filter(c => c.binderId === b.id);
+                const bVal = bCards.reduce((s, c) => s + (c.price || 0), 0);
+                
+                const btn = document.createElement('div');
+                btn.className = `shrink-0 group flex items-center rounded-xl border text-xs font-semibold transition-all ${
+                    activeBinderId === b.id 
+                    ? 'bg-cm-blue text-white border-cm-light shadow-md' 
+                    : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
+                }`;
+
+                btn.innerHTML = `
+                    <button onclick="selectBinder('${b.id}')" class="px-3 py-1.5 sm:py-2 flex items-center gap-1.5">
+                        <i class="fa-solid fa-book-bookmark text-xs"></i>
+                        <span>${b.name}</span>
+                        <span class="bg-slate-900/60 px-1.5 py-0.5 rounded-md text-[10px] text-slate-300">${bCards.length}</span>
+                        <span class="text-[10px] opacity-80 hidden sm:inline">${bVal.toFixed(2).replace('.', ',')} €</span>
+                    </button>
+                    ${!b.isDefault ? `
+                    <button onclick="deleteBinder('${b.id}')" title="Binder löschen" class="pr-2 text-slate-400 hover:text-red-400 transition-colors">
+                        <i class="fa-solid fa-xmark text-xs"></i>
+                    </button>` : ''}
+                `;
+                list.appendChild(btn);
+            });
         }
 
         function renderCollection() {
@@ -395,55 +751,55 @@
                     cardEl.className = 'card-holo bg-slate-900 border border-slate-800/80 rounded-2xl overflow-hidden flex flex-col justify-between shadow-lg relative group';
                     
                     cardEl.innerHTML = `
-                        <!-- Card Image -->
-                        <div class="relative bg-slate-950 p-3 aspect-[3/4] flex items-center justify-center overflow-hidden">
+                        <!-- Card Image Container -->
+                        <div class="relative bg-slate-950 p-2 sm:p-3 aspect-[3/4] flex items-center justify-center overflow-hidden">
                             <img src="${card.image}" alt="${card.name}" loading="lazy" class="max-h-full max-w-full object-contain drop-shadow-md rounded transition-transform duration-300 group-hover:scale-105">
                             
                             <!-- Action buttons -->
-                            <div class="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                                <button onclick="openEditModal('${card.id}')" title="Qualität/Preis anpassen" class="w-8 h-8 bg-slate-900/90 hover:bg-cm-blue text-white rounded-lg flex items-center justify-center shadow text-xs backdrop-blur-sm transition-colors">
+                            <div class="absolute top-1.5 right-1.5 flex flex-col gap-1 z-20">
+                                <button onclick="openEditModal('${card.id}')" title="Bearbeiten" class="w-7 h-7 bg-slate-900/90 hover:bg-cm-blue text-white rounded-lg flex items-center justify-center shadow text-xs backdrop-blur-sm transition-colors">
                                     <i class="fa-solid fa-pen"></i>
                                 </button>
-                                <button onclick="deleteCard('${card.id}')" title="Aus Sammlung entfernen" class="w-8 h-8 bg-slate-900/90 hover:bg-red-600 text-white rounded-lg flex items-center justify-center shadow text-xs backdrop-blur-sm transition-colors">
+                                <button onclick="deleteCard('${card.id}')" title="Entfernen" class="w-7 h-7 bg-slate-900/90 hover:bg-red-600 text-white rounded-lg flex items-center justify-center shadow text-xs backdrop-blur-sm transition-colors">
                                     <i class="fa-solid fa-trash"></i>
                                 </button>
                             </div>
 
                             <!-- Set Badge -->
-                            <div class="absolute top-2 left-2 max-w-[70%] z-10">
-                                <span class="bg-slate-950/85 text-slate-300 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-slate-800/80 backdrop-blur-sm truncate block">
+                            <div class="absolute top-1.5 left-1.5 max-w-[65%] z-10">
+                                <span class="bg-slate-950/85 text-slate-300 text-[9px] font-semibold px-1.5 py-0.5 rounded border border-slate-800/80 backdrop-blur-sm truncate block">
                                     ${card.setName}
                                 </span>
                             </div>
                         </div>
 
-                        <!-- Details & Cardmarket Info -->
-                        <div class="p-3 bg-slate-900 border-t border-slate-800/80 flex flex-col justify-between flex-grow">
+                        <!-- Card Details Footer -->
+                        <div class="p-2.5 sm:p-3 bg-slate-900 border-t border-slate-800/80 flex flex-col justify-between flex-grow">
                             <div>
                                 <div class="flex items-start justify-between gap-1">
-                                    <h4 class="font-display font-bold text-slate-100 text-sm truncate" title="${card.name}">${card.name}</h4>
-                                    ${card.cmUrl ? `<a href="${card.cmUrl}" target="_blank" rel="noopener" title="Auf Cardmarket öffnen" class="text-cm-light hover:text-white text-xs shrink-0 mt-0.5"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>` : ''}
+                                    <h4 class="font-display font-bold text-slate-100 text-xs sm:text-sm truncate" title="${card.name}">${card.name}</h4>
+                                    ${card.cmUrl ? `<a href="${card.cmUrl}" target="_blank" rel="noopener" title="Auf Cardmarket öffnen" class="text-cm-light hover:text-white text-xs shrink-0"><i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i></a>` : ''}
                                 </div>
-                                <p class="text-[11px] text-slate-400 flex items-center justify-between mt-0.5">
-                                    <span>${card.rarity || 'Common'}</span>
+                                <p class="text-[10px] text-slate-400 flex items-center justify-between mt-0.5">
+                                    <span class="truncate max-w-[70%]">${card.rarity || 'Common'}</span>
                                     <span>#${card.number || '?'}</span>
                                 </p>
                             </div>
 
-                            <!-- BOTTOM ROW: LEFT = QUALITY | RIGHT = CARDMARKET PRICE -->
-                            <div class="flex items-center justify-between mt-3 pt-2.5 border-t border-slate-800">
+                            <!-- BOTTOM ROW: UNTEN LINKS = QUALITÄT | UNTEN RECHTS = CARDMARKET PREIS -->
+                            <div class="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-800/90">
                                 <!-- UNTEN LINKS: Qualität / Zustand -->
                                 <div class="flex flex-col">
-                                    <span class="text-[8px] uppercase tracking-wider text-slate-500 font-bold block mb-0.5">Qualität</span>
-                                    <span class="text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${qualityInfo.class}" title="Qualität: ${card.quality}">
+                                    <span class="text-[7px] sm:text-[8px] uppercase tracking-wider text-slate-500 font-bold block">Qualität</span>
+                                    <span class="text-[9px] sm:text-[10px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider ${qualityInfo.class}" title="Qualität: ${card.quality}">
                                         ${qualityInfo.short}
                                     </span>
                                 </div>
 
                                 <!-- UNTEN RECHTS: Cardmarket Preis -->
                                 <div class="text-right">
-                                    <span class="text-[8px] uppercase tracking-wider text-slate-500 font-bold block mb-0.5">Cardmarket</span>
-                                    <span class="font-display font-extrabold text-sm text-emerald-400 leading-none block">
+                                    <span class="text-[7px] sm:text-[8px] uppercase tracking-wider text-slate-500 font-bold block">Cardmarket</span>
+                                    <span class="font-display font-extrabold text-xs sm:text-sm text-emerald-400 leading-none block">
                                         ${formattedPrice}
                                     </span>
                                 </div>
@@ -455,6 +811,82 @@
             }
         }
 
+        function renderVirtualBinderPage() {
+            const grid = document.getElementById('binder-pocket-grid');
+            grid.innerHTML = '';
+
+            let binderCards = activeBinderId === 'all' 
+                ? collection 
+                : collection.filter(c => c.binderId === activeBinderId);
+
+            const activeBinderObj = binders.find(b => b.id === activeBinderId);
+            const binderTitle = activeBinderId === 'all' ? 'Alle Karten Binder' : (activeBinderObj ? activeBinderObj.name : 'Binder');
+            
+            const totalPages = Math.max(1, Math.ceil(binderCards.length / 9));
+            if (binderCurrentPage > totalPages) binderCurrentPage = totalPages;
+
+            document.getElementById('active-binder-title').innerText = binderTitle;
+            document.getElementById('active-binder-stats').innerText = `Seite ${binderCurrentPage} von ${totalPages} • ${binderCards.length} Karten`;
+            document.getElementById('page-indicator').innerText = `Seite ${binderCurrentPage} / ${totalPages}`;
+
+            document.getElementById('prev-page-btn').disabled = binderCurrentPage <= 1;
+            document.getElementById('next-page-btn').disabled = binderCurrentPage >= totalPages;
+
+            const startIndex = (binderCurrentPage - 1) * 9;
+            const pageCards = binderCards.slice(startIndex, startIndex + 9);
+
+            for (let i = 0; i < 9; i++) {
+                const card = pageCards[i];
+                const pocket = document.createElement('div');
+
+                if (card) {
+                    const qualityInfo = QUALITY_CONFIG[card.quality] || QUALITY_CONFIG['Near Mint'];
+                    const formattedPrice = (card.price !== undefined && card.price !== null) 
+                        ? card.price.toFixed(2).replace('.', ',') + ' €' 
+                        : 'k.A.';
+
+                    pocket.className = 'binder-pocket has-card rounded-xl sm:rounded-2xl p-1.5 sm:p-2.5 flex flex-col justify-between relative group bg-slate-900/90';
+                    pocket.innerHTML = `
+                        <div class="flex items-center justify-between text-[9px] sm:text-[10px] text-slate-400 mb-1">
+                            <span class="truncate max-w-[70%]">${card.setName}</span>
+                            <button onclick="openEditModal('${card.id}')" class="text-slate-400 hover:text-cm-light p-0.5"><i class="fa-solid fa-pen text-[9px]"></i></button>
+                        </div>
+
+                        <div class="aspect-[3/4] flex items-center justify-center bg-slate-950 rounded-lg p-0.5 relative overflow-hidden">
+                            <img src="${card.image}" class="max-h-full object-contain rounded drop-shadow">
+                        </div>
+
+                        <div class="mt-1.5">
+                            <h5 class="font-bold text-[10px] sm:text-xs truncate text-slate-200">${card.name}</h5>
+                            <div class="flex items-center justify-between mt-1 pt-1 border-t border-slate-800">
+                                <!-- UNTEN LINKS: Qualität -->
+                                <span class="text-[8px] sm:text-[9px] font-extrabold px-1 py-0.2 rounded ${qualityInfo.class}">
+                                    ${qualityInfo.short}
+                                </span>
+                                <!-- UNTEN RECHTS: Cardmarket Preis -->
+                                <span class="font-display font-extrabold text-[10px] sm:text-xs text-emerald-400">
+                                    ${formattedPrice}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    pocket.className = 'binder-pocket rounded-xl sm:rounded-2xl flex flex-col items-center justify-center p-2 text-slate-700 aspect-[3/4] sm:aspect-auto';
+                    pocket.innerHTML = `
+                        <i class="fa-solid fa-plus text-xs sm:text-xl mb-0.5 opacity-40"></i>
+                        <span class="text-[8px] sm:text-[10px] font-semibold tracking-wider uppercase opacity-50">${startIndex + i + 1}</span>
+                    `;
+                }
+
+                grid.appendChild(pocket);
+            }
+        }
+
+        function changePage(delta) {
+            binderCurrentPage += delta;
+            renderVirtualBinderPage();
+        }
+
         function getFilteredAndSortedCards() {
             const searchTerm = document.getElementById('filter-search').value.toLowerCase();
             const qualityFilter = document.getElementById('filter-quality').value;
@@ -462,12 +894,13 @@
             const sortBy = document.getElementById('sort-by').value;
 
             return collection.filter(card => {
+                const matchesBinder = activeBinderId === 'all' || card.binderId === activeBinderId;
                 const matchesSearch = card.name.toLowerCase().includes(searchTerm) || 
                                      card.setName.toLowerCase().includes(searchTerm);
                 const matchesQuality = !qualityFilter || card.quality === qualityFilter;
                 const matchesRarity = !rarityFilter || card.rarity === rarityFilter;
 
-                return matchesSearch && matchesQuality && matchesRarity;
+                return matchesBinder && matchesSearch && matchesQuality && matchesRarity;
             }).sort((a, b) => {
                 if (sortBy === 'price-desc') return (b.price || 0) - (a.price || 0);
                 if (sortBy === 'price-asc') return (a.price || 0) - (b.price || 0);
@@ -516,33 +949,29 @@
             spinner.classList.remove('hidden');
 
             try {
-                // Querying Pokemon TCG API v2 which provides official Cardmarket market data
                 const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=name:"*${encodeURIComponent(query)}*"&pageSize=24`);
                 const data = await response.json();
 
                 spinner.classList.add('hidden');
 
                 if (!data.data || data.data.length === 0) {
-                    grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400">Keine Cardmarket-Treffer für "${query}" gefunden.</div>`;
+                    grid.innerHTML = `<div class="col-span-full text-center py-8 text-slate-400 text-xs">Keine Cardmarket-Treffer für "${query}" gefunden.</div>`;
                     return;
                 }
 
                 data.data.forEach(card => {
-                    // Extract Cardmarket specific information
                     let cmTrendPrice = 0;
                     let cmUrl = "";
-                    let cmAvg30 = 0;
 
                     if (card.cardmarket) {
                         cmUrl = card.cardmarket.url || "";
                         if (card.cardmarket.prices) {
                             cmTrendPrice = card.cardmarket.prices.trendPrice || card.cardmarket.prices.averageSellPrice || 0;
-                            cmAvg30 = card.cardmarket.prices.avg30 || 0;
                         }
                     }
 
                     const cardNode = document.createElement('div');
-                    cardNode.className = 'bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col justify-between hover:border-cm-light transition-all';
+                    cardNode.className = 'bg-slate-950 border border-slate-800 rounded-xl p-2.5 flex flex-col justify-between hover:border-cm-light transition-all';
                     
                     const formattedTrend = cmTrendPrice ? cmTrendPrice.toFixed(2).replace('.', ',') + ' €' : 'k.A.';
 
@@ -552,26 +981,21 @@
                                 <img src="${card.images.small}" alt="${card.name}" class="max-h-full object-contain rounded">
                             </div>
                             <h5 class="font-bold text-xs text-slate-200 truncate">${card.name}</h5>
-                            <p class="text-[10px] text-slate-400 truncate">${card.set.name} (#${card.number})</p>
+                            <p class="text-[9px] text-slate-400 truncate">${card.set.name} (#${card.number})</p>
                         </div>
 
-                        <div class="mt-3 pt-2 border-t border-slate-800/80 space-y-2">
-                            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800">
-                                <div class="flex items-center justify-between text-[10px]">
-                                    <span class="text-slate-400 font-semibold">Cardmarket Trend:</span>
+                        <div class="mt-2 pt-2 border-t border-slate-800/80 space-y-2">
+                            <div class="bg-slate-900 p-1.5 rounded-lg border border-slate-800">
+                                <div class="flex items-center justify-between text-[9px]">
+                                    <span class="text-slate-400 font-semibold">CM Trend:</span>
                                     <span class="font-extrabold text-emerald-400">${formattedTrend}</span>
                                 </div>
-                                ${cmAvg30 ? `
-                                <div class="flex items-center justify-between text-[9px] mt-0.5 text-slate-500">
-                                    <span>⌀ 30 Tage:</span>
-                                    <span>${cmAvg30.toFixed(2).replace('.', ',')} €</span>
-                                </div>` : ''}
                             </div>
 
                             <div class="flex items-center justify-between gap-1">
                                 ${cmUrl ? `
-                                <a href="${cmUrl}" target="_blank" rel="noopener" class="text-[10px] text-cm-light hover:underline flex items-center gap-1">
-                                    <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i> CM Seite
+                                <a href="${cmUrl}" target="_blank" rel="noopener" class="text-[9px] text-cm-light hover:underline flex items-center gap-1">
+                                    <i class="fa-solid fa-arrow-up-right-from-square text-[8px]"></i> CM Link
                                 </a>` : '<span></span>'}
 
                                 <button onclick='selectCardToAdd(${JSON.stringify({
@@ -582,8 +1006,8 @@
                                     number: card.number,
                                     price: cmTrendPrice,
                                     cmUrl: cmUrl
-                                }).replace(/'/g, "&apos;")})' class="bg-cm-blue hover:bg-cm-light text-white text-xs font-bold px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 shadow">
-                                    <i class="fa-solid fa-plus text-[10px]"></i> Hinzufügen
+                                }).replace(/'/g, "&apos;")})' class="bg-cm-blue hover:bg-cm-light text-white text-[10px] font-bold px-2 py-1 rounded-lg transition-colors flex items-center gap-1 shadow">
+                                    <i class="fa-solid fa-plus text-[8px]"></i> Hinzufügen
                                 </button>
                             </div>
                         </div>
@@ -594,7 +1018,7 @@
             } catch (err) {
                 console.error("Cardmarket API Fehler:", err);
                 spinner.classList.add('hidden');
-                grid.innerHTML = `<div class="col-span-full text-center py-12 text-red-400">Fehler beim Laden der Cardmarket Daten. Bitte versuche es erneut.</div>`;
+                grid.innerHTML = `<div class="col-span-full text-center py-8 text-red-400 text-xs">Fehler beim Laden der Cardmarket Daten.</div>`;
             }
         }
 
@@ -608,23 +1032,11 @@
         }
 
         function selectCardToAdd(cardData) {
-            const qualityInput = prompt(`Qualität für "${cardData.name}" festlegen:\n\nMint (M), Near Mint (NM), Excellent (EX), Good (GD), Lightly Played (LP), Played (PL), Poor (PO)`, "Near Mint");
-            
-            let finalQuality = "Near Mint";
-            if (qualityInput) {
-                const trimmed = qualityInput.trim();
-                if (QUALITY_CONFIG[trimmed]) {
-                    finalQuality = trimmed;
-                } else {
-                    const foundKey = Object.keys(QUALITY_CONFIG).find(
-                        k => k.toLowerCase() === trimmed.toLowerCase() || QUALITY_CONFIG[k].short.toLowerCase() === trimmed.toLowerCase()
-                    );
-                    if (foundKey) finalQuality = foundKey;
-                }
-            }
+            const targetBinderId = activeBinderId !== 'all' ? activeBinderId : (binders[0] ? binders[0].id : 'b_main');
 
             const newCard = {
                 id: 'cm_card_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                binderId: targetBinderId,
                 name: cardData.name,
                 image: cardData.image,
                 setName: cardData.setName,
@@ -632,13 +1044,19 @@
                 number: cardData.number,
                 price: parseFloat(cardData.price) || 0,
                 cmUrl: cardData.cmUrl || "",
-                quality: finalQuality,
+                quality: 'Near Mint',
+                foil: 'Standard',
+                lang: 'DE',
                 addedTimestamp: Date.now()
             };
 
             collection.unshift(newCard);
             saveCollection();
-            renderCollection();
+            renderBinderBar();
+            
+            if (currentView === 'grid') renderCollection();
+            else renderVirtualBinderPage();
+            
             closeAddModal();
         }
 
@@ -649,13 +1067,25 @@
             document.getElementById('edit-card-id').value = card.id;
             document.getElementById('edit-card-quality').value = card.quality || 'Near Mint';
             document.getElementById('edit-card-price').value = card.price !== undefined ? card.price : '';
+            document.getElementById('edit-card-foil').value = card.foil || 'Standard';
+            document.getElementById('edit-card-lang').value = card.lang || 'DE';
+
+            const binderSelect = document.getElementById('edit-card-binder');
+            binderSelect.innerHTML = '';
+            binders.forEach(b => {
+                const opt = document.createElement('option');
+                opt.value = b.id;
+                opt.textContent = b.name;
+                if (b.id === (card.binderId || binders[0].id)) opt.selected = true;
+                binderSelect.appendChild(opt);
+            });
 
             const previewContainer = document.getElementById('edit-card-preview');
             previewContainer.innerHTML = `
-                <img src="${card.image}" class="w-12 h-16 object-contain rounded">
+                <img src="${card.image}" class="w-10 h-14 object-contain rounded">
                 <div>
-                    <h5 class="font-bold text-sm text-slate-100">${card.name}</h5>
-                    <p class="text-xs text-slate-400">${card.setName} (${card.rarity})</p>
+                    <h5 class="font-bold text-xs text-slate-100">${card.name}</h5>
+                    <p class="text-[10px] text-slate-400">${card.setName} (${card.rarity})</p>
                 </div>
             `;
 
@@ -669,34 +1099,97 @@
         function saveCardEdit(e) {
             e.preventDefault();
             const id = document.getElementById('edit-card-id').value;
+            const binderId = document.getElementById('edit-card-binder').value;
             const quality = document.getElementById('edit-card-quality').value;
             const priceVal = document.getElementById('edit-card-price').value;
+            const foil = document.getElementById('edit-card-foil').value;
+            const lang = document.getElementById('edit-card-lang').value;
 
             const card = collection.find(c => c.id === id);
             if (card) {
+                card.binderId = binderId;
                 card.quality = quality;
+                card.foil = foil;
+                card.lang = lang;
                 if (priceVal !== '') {
                     card.price = parseFloat(priceVal) || 0;
                 }
                 saveCollection();
-                renderCollection();
+                renderBinderBar();
+                
+                if (currentView === 'grid') renderCollection();
+                else renderVirtualBinderPage();
             }
             closeEditModal();
         }
 
         function deleteCard(cardId) {
-            if (confirm("Möchtest du diese Karte wirklich aus deiner Cardmarket-Sammlung entfernen?")) {
+            if (confirm("Karte aus deinem Binder entfernen?")) {
                 collection = collection.filter(c => c.id !== cardId);
                 saveCollection();
+                renderBinderBar();
+                
+                if (currentView === 'grid') renderCollection();
+                else renderVirtualBinderPage();
+            }
+        }
+
+        function openNewBinderModal() {
+            document.getElementById('binder-modal').classList.remove('hidden');
+            document.getElementById('binder-name-input').focus();
+        }
+
+        function closeBinderModal() {
+            document.getElementById('binder-modal').classList.add('hidden');
+        }
+
+        function handleCreateBinder(e) {
+            e.preventDefault();
+            const name = document.getElementById('binder-name-input').value.trim();
+            if (!name) return;
+
+            const newBinder = {
+                id: 'b_' + Date.now(),
+                name: name,
+                isDefault: false
+            };
+
+            binders.push(newBinder);
+            saveBinders();
+            renderBinderBar();
+            closeBinderModal();
+            document.getElementById('binder-name-input').value = '';
+        }
+
+        function deleteBinder(binderId) {
+            const b = binders.find(item => item.id === binderId);
+            if (!b || b.isDefault) return;
+
+            if (confirm(`Binder "${b.name}" löschen? Karten werden in das Hauptbinder verschoben.`)) {
+                const defaultBinderId = binders[0].id;
+                collection.forEach(c => {
+                    if (c.binderId === binderId) c.binderId = defaultBinderId;
+                });
+
+                binders = binders.filter(item => item.id !== binderId);
+                if (activeBinderId === binderId) activeBinderId = 'all';
+
+                saveBinders();
+                saveCollection();
+                renderBinderBar();
                 renderCollection();
             }
         }
 
         function exportData() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(collection, null, 2));
+            const exportPayload = {
+                binders: binders,
+                collection: collection
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportPayload, null, 2));
             const downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `pokemon_sammlung_backup_${new Date().toISOString().slice(0,10)}.json`);
+            downloadAnchor.setAttribute("download", `pokemon_binder_backup_${new Date().toISOString().slice(0,10)}.json`);
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
             downloadAnchor.remove();
@@ -707,16 +1200,23 @@
             fileReader.onload = function(e) {
                 try {
                     const imported = JSON.parse(e.target.result);
-                    if (Array.isArray(imported)) {
+                    if (imported.collection && Array.isArray(imported.collection)) {
+                        collection = imported.collection;
+                        binders = imported.binders || binders;
+                        saveCollection();
+                        saveBinders();
+                        renderBinderBar();
+                        renderCollection();
+                        alert("Sammlung & Binders erfolgreich importiert!");
+                    } else if (Array.isArray(imported)) {
                         collection = imported;
                         saveCollection();
+                        renderBinderBar();
                         renderCollection();
                         alert("Sammlung erfolgreich importiert!");
-                    } else {
-                        alert("Ungültiges Dateiformat.");
                     }
                 } catch (err) {
-                    alert("Fehler beim Lesen der Datei.");
+                    alert("Fehler beim Lesen der Import-Datei.");
                 }
             };
             if (event.target.files[0]) {
@@ -728,6 +1228,7 @@
             return [
                 {
                     id: 'demo_cm_1',
+                    binderId: 'b_main',
                     name: 'Charizard ex',
                     image: 'https://images.pokemontcg.io/sv3pt5/199_hires.png',
                     setName: '151',
@@ -736,10 +1237,13 @@
                     price: 185.50,
                     cmUrl: 'https://www.cardmarket.com/en/Pokemon',
                     quality: 'Near Mint',
+                    foil: 'Holo',
+                    lang: 'DE',
                     addedTimestamp: Date.now() - 100000
                 },
                 {
                     id: 'demo_cm_2',
+                    binderId: 'b_rare',
                     name: 'Umbreon VMAX',
                     image: 'https://images.pokemontcg.io/swsh7/215_hires.png',
                     setName: 'Evolving Skies',
@@ -748,10 +1252,13 @@
                     price: 640.00,
                     cmUrl: 'https://www.cardmarket.com/en/Pokemon',
                     quality: 'Mint',
+                    foil: 'Holo',
+                    lang: 'EN',
                     addedTimestamp: Date.now() - 80000
                 },
                 {
                     id: 'demo_cm_3',
+                    binderId: 'b_main',
                     name: 'Pikachu',
                     image: 'https://images.pokemontcg.io/base1/58_hires.png',
                     setName: 'Base Set',
@@ -760,6 +1267,8 @@
                     price: 4.20,
                     cmUrl: 'https://www.cardmarket.com/en/Pokemon',
                     quality: 'Excellent',
+                    foil: 'Standard',
+                    lang: 'DE',
                     addedTimestamp: Date.now() - 60000
                 }
             ];
